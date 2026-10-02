@@ -10,6 +10,7 @@ from app.llm.types import LLMProvider
 from app.models.user import User
 from app.models.workspace import WorkspaceMember
 from app.schemas.assistant import (
+    AssistantStatus,
     ChatRequest,
     ChatResponse,
     ConversationDetail,
@@ -31,6 +32,14 @@ async def get_assistant_service(
 ) -> AssistantService:
     """Builds the service for this workspace, after authorizing access."""
     return AssistantService(session, user, workspace_id, provider)
+
+
+@router.get("/assistant/status", response_model=AssistantStatus, summary="Which model is answering")
+async def assistant_status(
+    _membership: WorkspaceMember = Depends(get_workspace_membership),
+    provider: LLMProvider = Depends(get_llm_provider),
+) -> AssistantStatus:
+    return AssistantStatus(provider=provider.name, demo=provider.name == "fake")
 
 
 @router.post("/assistant/chat", response_model=ChatResponse, summary="Chat with the assistant")

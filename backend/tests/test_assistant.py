@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import pytest
 from httpx import AsyncClient
 
 from app.core.config import get_settings
@@ -30,6 +31,31 @@ async def tasks_of(client: AsyncClient, user) -> dict:
 
 def local_today() -> datetime:
     return datetime.now(ZoneInfo(TZ))
+
+
+async def test_status_reports_demo_mode_and_messages_carry_their_provider(
+    make_user, client, use_provider
+) -> None:
+    alice = await make_user()
+    url = f"{base(alice.workspace_id)}/assistant/status"
+
+    demo = (await client.get(url, headers=alice.headers)).json()
+    reply = (await chat(client, alice, "hello")).json()
+    use_provider(ScriptedProvider())
+    real = (await client.get(url, headers=alice.headers)).json()
+
+    assert demo == {"provider": "fake", "demo": True}
+    assert real == {"provider": "scripted", "demo": False}
+    assert reply["message"]["provider"] == "fake"
+
+
+async def test_status_requires_membership(make_user, client) -> None:
+    alice = await make_user("alice@example.com", "Alice")
+    bob = await make_user("bob@example.com", "Bob")
+    url = f"{base(alice.workspace_id)}/assistant/status"
+
+    assert (await client.get(url)).status_code == 401
+    assert (await client.get(url, headers=bob.headers)).status_code == 404
 
 
 # --- The demo (fake) provider, end to end ---------------------------------------
@@ -314,6 +340,25 @@ async def test_chat_validation(make_user, client) -> None:
     ):
         response = await client.post(url, json=payload, headers=alice.headers)
         assert response.status_code == 422, payload
+
+
+@pytest.mark.parametrize(
+    "browser_timezone",
+    # Names Chromium/Edge actually report for these regions (legacy IANA aliases)
+    ["Asia/Katmandu", "Asia/Calcutta", "Europe/Kiev", "Asia/Saigon", "America/Buenos_Aires", "Asia/Kathmandu", "UTC"],
+)
+async def test_timezone_names_reported_by_real_browsers_are_accepted(
+    make_user, client, browser_timezone
+) -> None:
+    alice = await make_user()
+
+    response = await client.post(
+        f"{base(alice.workspace_id)}/assistant/chat",
+        json={"message": "hello", "timezone": browser_timezone},
+        headers=alice.headers,
+    )
+
+    assert response.status_code == 200, response.text
 
 
 async def test_unknown_conversation_id_is_404(make_user, client) -> None:

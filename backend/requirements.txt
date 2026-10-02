@@ -19,6 +19,11 @@ pyjwt==2.15.1
 # Email format validation for Pydantic's EmailStr
 email-validator==2.3.0
 
+# Complete IANA timezone database. The slim Docker image lacks legacy aliases that
+# browsers still report (Asia/Katmandu, Asia/Calcutta, Europe/Kiev), which would
+# otherwise make requests from those users fail validation.
+tzdata==2026.4
+
 # Testing
 pytest==8.4.2
 pytest-asyncio==1.4.0
