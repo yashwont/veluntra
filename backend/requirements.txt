@@ -1,0 +1,22 @@
+# Versions pinned to the set verified by the test suite.
+
+# Web framework and server
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+
+# Configuration (typed settings loaded from environment variables)
+pydantic-settings==2.15.0
+
+# Database: async SQLAlchemy 2.x, asyncpg driver, Alembic migrations
+sqlalchemy[asyncio]==2.1.2
+asyncpg==0.31.0
+alembic==1.20.0
+
+# Security: Argon2 password hashing, JWT encode/decode
+argon2-cffi==25.1.0
+pyjwt==2.15.1
+
+# Testing
+pytest==8.4.2
+pytest-asyncio==1.4.0
+httpx==0.28.1
