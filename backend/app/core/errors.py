@@ -51,16 +51,23 @@ class PermissionDeniedError(AppError):
 
 
 def error_response(
-    status_code: int, code: str, message: str, details: object | None = None
+    status_code: int,
+    code: str,
+    message: str,
+    details: object | None = None,
+    headers: dict[str, str] | None = None,
 ) -> JSONResponse:
     body: dict[str, object] = {"code": code, "message": message}
     if details is not None:
         body["details"] = details
-    return JSONResponse(status_code=status_code, content={"error": body})
+    return JSONResponse(
+        status_code=status_code, content={"error": body}, headers=headers
+    )
 
 
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
-    return error_response(exc.status_code, exc.code, exc.message)
+    headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
+    return error_response(exc.status_code, exc.code, exc.message, headers=headers)
 
 
 async def http_exception_handler(

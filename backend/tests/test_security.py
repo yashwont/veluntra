@@ -46,10 +46,11 @@ def test_access_token_roundtrip() -> None:
 
 
 def test_refresh_token_cannot_be_used_as_access_token() -> None:
-    token = create_refresh_token("user-123")
+    issued = create_refresh_token("user-123")
 
     with pytest.raises(AuthenticationError):
-        decode_token(token, "access")
+        decode_token(issued.token, "access")
+    assert decode_token(issued.token, "refresh")["jti"] == issued.jti
 
 
 def test_tampered_token_is_rejected() -> None:

@@ -1,4 +1,5 @@
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal
 
@@ -39,24 +40,37 @@ def password_needs_rehash(password_hash: str) -> bool:
 # --- Tokens ------------------------------------------------------------------
 
 
-def _create_token(subject: str, token_type: TokenType, lifetime: timedelta) -> str:
+@dataclass(frozen=True)
+class IssuedToken:
+    token: str
+    jti: str
+    expires_at: datetime
+
+
+def _create_token(
+    subject: str, token_type: TokenType, lifetime: timedelta
+) -> IssuedToken:
     now = datetime.now(timezone.utc)
+    jti = str(uuid.uuid4())  # unique id, lets us revoke/rotate refresh tokens
+    expires_at = now + lifetime
     claims: dict[str, Any] = {
         "sub": subject,
         "type": token_type,
         "iat": now,
-        "exp": now + lifetime,
-        "jti": str(uuid.uuid4()),  # unique id, lets us revoke/rotate refresh tokens
+        "exp": expires_at,
+        "jti": jti,
     }
-    return jwt.encode(claims, get_settings().secret_key, algorithm=_ALGORITHM)
+    token = jwt.encode(claims, get_settings().secret_key, algorithm=_ALGORITHM)
+    return IssuedToken(token=token, jti=jti, expires_at=expires_at)
 
 
 def create_access_token(subject: str) -> str:
     minutes = get_settings().access_token_expire_minutes
-    return _create_token(subject, "access", timedelta(minutes=minutes))
+    return _create_token(subject, "access", timedelta(minutes=minutes)).token
 
 
-def create_refresh_token(subject: str) -> str:
+def create_refresh_token(subject: str) -> IssuedToken:
+    """Returns the token plus its jti/expiry so the caller can persist it."""
     days = get_settings().refresh_token_expire_days
     return _create_token(subject, "refresh", timedelta(days=days))
 
