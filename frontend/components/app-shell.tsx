@@ -13,6 +13,7 @@ const NAV = [
   { href: "/", label: "Home", icon: "M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10" },
   { href: "/tasks", label: "Tasks", icon: "M9 11.5 11 13.5 15.5 9M5 4h14v16H5z" },
   { href: "/notes", label: "Notes", icon: "M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5" },
+  { href: "/assistant", label: "Assistant", icon: "M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" },
 ] as const;
 
 function NavIcon({ path }: { path: string }) {
@@ -61,13 +62,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
-        <nav aria-label="Main" className="flex gap-1 md:flex-col">
+        <nav aria-label="Main" className="flex gap-0.5 overflow-x-auto md:flex-col md:gap-1 md:overflow-visible">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors md:gap-2.5 md:px-3 ${
                 isActive(item.href)
                   ? "bg-accent-soft text-accent"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"

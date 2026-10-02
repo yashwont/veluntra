@@ -63,3 +63,46 @@ export interface NoteSummary {
   created_at: string;
   updated_at: string;
 }
+
+// --- AI assistant -----------------------------------------------------------
+
+/** One tool the assistant ran while answering: what it did and whether it worked. */
+export interface ToolEvent {
+  name: string;
+  input: Record<string, unknown>;
+  ok: boolean;
+  result: Record<string, unknown> | null;
+  error: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  tool_events: ToolEvent[];
+  provider: string | null;
+  created_at: string;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ConversationDetail extends Conversation {
+  messages: ChatMessage[];
+}
+
+export interface ChatResponse {
+  conversation_id: string;
+  message: ChatMessage;
+  provider: string;
+}
+
+export interface AssistantStatus {
+  provider: string;
+  /** True when the built-in demo model is answering instead of a real AI model. */
+  demo: boolean;
+}

@@ -56,7 +56,13 @@ class MessageRead(BaseModel):
     role: MessageRole
     content: str
     tool_events: list[ToolEventRead]
+    provider: str | None = Field(default=None, description="Which model backend wrote this reply.")
     created_at: datetime
+
+
+class AssistantStatus(BaseModel):
+    provider: str
+    demo: bool = Field(description="True when running the built-in demo model instead of a real AI model.")
 
 
 class ChatResponse(BaseModel):
