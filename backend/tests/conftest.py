@@ -4,6 +4,8 @@ import os
 # This must be set before the app (and its settings) are imported.
 TEST_DB = "veluntra_test"
 os.environ["POSTGRES_DB"] = TEST_DB
+# Tests must never reach a real (paid) model, whatever the developer's .env says
+os.environ["LLM_PROVIDER"] = "fake"
 
 import subprocess  # noqa: E402
 import sys  # noqa: E402
@@ -18,6 +20,7 @@ from sqlalchemy import text  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
 from app.db.session import engine  # noqa: E402
+from app.llm.factory import get_llm_provider  # noqa: E402
 from app.main import app  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -72,6 +75,18 @@ async def client() -> AsyncIterator[AsyncClient]:
         transport=ASGITransport(app=app), base_url="http://test"
     ) as c:
         yield c
+
+
+@pytest.fixture
+def use_provider():
+    """Replace the LLM provider for one test: use_provider(ScriptedProvider(...))."""
+
+    def _use(provider):
+        app.dependency_overrides[get_llm_provider] = lambda: provider
+        return provider
+
+    yield _use
+    app.dependency_overrides.pop(get_llm_provider, None)
 
 
 PASSWORD = "a-long-test-password"
