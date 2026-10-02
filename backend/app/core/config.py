@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 14
 
+    # AI assistant. "fake" is a rule-based demo model that needs no API key.
+    llm_provider: str = "fake"
+    assistant_max_iterations: int = Field(default=5, ge=1, le=10)
+    # Only this many recent messages are sent to the model, never the whole history
+    assistant_history_messages: int = Field(default=12, ge=0, le=50)
+
     @property
     def database_url(self) -> URL:
         # URL.create escapes special characters in the password safely
