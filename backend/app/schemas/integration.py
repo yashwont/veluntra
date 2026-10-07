@@ -20,6 +20,7 @@ class IntegrationAccountRead(BaseModel):
 
 
 class IntegrationsRead(BaseModel):
+    demo: bool = Field(description="True when Google is simulated with canned demo data.")
     google_configured: bool = Field(
         description="False when the server has no Google client ID/secret, so connecting is impossible."
     )

@@ -74,6 +74,7 @@ async def list_integrations(
 ) -> IntegrationsRead:
     accounts = await service.list_accounts()
     return IntegrationsRead(
+        demo=get_settings().google_demo,
         google_configured=get_settings().google_configured,
         accounts=[_account_read(a) for a in accounts],
     )

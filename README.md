@@ -1,75 +1,117 @@
 # Veluntra
 
-An AI-powered personal operations system: tasks, notes, documents and conversations in one private command center, with an AI layer that acts only through validated backend services.
+[![CI](https://github.com/yashwont/veluntra/actions/workflows/ci.yml/badge.svg)](https://github.com/yashwont/veluntra/actions/workflows/ci.yml)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 
-The full specification is in [docs/PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md).
+**An AI-powered personal operations system.** Tasks, notes, documents, long-term memory and your Google
+calendar, mail and Drive in one private place, with an assistant that can act on all of it, but only
+through validated backend services, never by touching the database itself.
 
-## Status
+It started as a question: *how do you let an AI act on someone's personal data and still trust it?*
+The answer here: the model proposes, the application's own rules decide, the user approves anything that
+matters, and every action is recorded.
 
-Phases 1-6 complete: backend foundation, users and workspaces, tasks, notes, the web frontend, and the AI assistant (tool system + chat UI). Phase 7 (documents) is done: upload, secure storage, text extraction (TXT/MD/PDF/DOCX), chunking, embeddings and semantic search, an assistant `search_documents` tool, and a Documents page (drag-and-drop upload, live processing status, download, retry, delete, search inside documents). The assistant currently runs on a built-in **demo model** (`LLM_PROVIDER=fake`); a real AI model is plugged in by adding a provider adapter and an API key. Document embeddings likewise use a built-in demo provider (`EMBEDDING_PROVIDER=fake`, word-overlap only); a real embedding model is plugged in the same way. The database image is now `pgvector/pgvector:pg16` (run `docker compose up -d db` to switch; data is kept). Phase 8 (memory) is done: durable facts with provenance (where each came from), kept only when worth remembering. The assistant saves them with a `remember` tool and recalls them with `search_memories` (plus a few relevant ones added to each chat); a Memory page lets you add, search, edit and forget. Phase 9 (unified search) is done: one search across tasks, notes, documents and memories, with filters typed into the query (`priority:high`, `is:overdue`, `tag:work`, `kind:person`, `type:notes`), a Search page, and an assistant `search_everything` tool. Phase 10 (Google integrations) is built and tested against a mocked Google: read-only Gmail, Calendar (with conflict detection) and Drive (importable into Documents), encrypted tokens, a Connections page, and assistant tools (`search_email`, `read_email`, `get_calendar`, `search_drive`). It becomes live once you add a Google OAuth client ID/secret: see [docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md). Phase 11 (proactive intelligence) is done: a daily briefing ("Prepare me for today": ranked priorities with reasons, overdue/due tasks, today's meetings with related documents and notes, follow-ups, suggested next steps), task and follow-up detection from your email as suggestions you accept or dismiss (nothing becomes a task without you), a Today page, and an assistant `get_briefing` tool. Detection is rule-based for now; a real language model can replace it later. All eleven planned phases are built.
+<!-- Screenshots: add images to docs/screenshots/ and uncomment.
+![Today](docs/screenshots/today.png)
+![Assistant](docs/screenshots/assistant.png)
+-->
 
-## Setup
+## Try it (about 5 minutes, no accounts, no API keys, no cost)
 
-Requires Docker Desktop and Node.js 20+.
+You need **Docker Desktop**, **Python 3** and **Node.js 20+**.
 
-**Backend** (API + Postgres, in Docker):
+```bash
+git clone https://github.com/yashwont/veluntra.git
+cd veluntra
+
+python scripts/init_env.py                  # creates .env with random secrets, demo mode on
+docker compose up -d --build                # database + API (applies migrations on start)
+docker compose exec backend python -m scripts.seed_demo   # sample tasks, notes, documents, memories
+
+cd frontend && npm install && npm run dev   # the web app
+```
+
+Open **http://localhost:3000** and sign in with **`demo@veluntra.dev`** / **`demo-password-123`**.
+(Run the seed command once the API is up, about ten seconds after `docker compose up`. On Windows, use
+`py` if `python` isn't found.)
+
+**What to try**
+
+| Open | What you'll see |
+|---|---|
+| **Today** | "Prepare me for today": ranked priorities with reasons, overdue tasks, follow-ups |
+| **Connections** → *Connect Google* | Instant sample Google account. Then **Today** also shows meetings (with a scheduling clash and your related notes and documents), and **Scan my email** proposes tasks you can accept or dismiss |
+| **Assistant** | Try: *"Remember that Priya likes Friday meetings"*, *"Create a high priority task to call Ram tomorrow"*, *"What is on my calendar today?"*, *"Search everything for pricing"*, *"Prepare me for today"* |
+| **Search** | One box over everything. Try `pricing`, `is:overdue`, `kind:person`, `type:documents revenue` |
+| **Documents** | Upload a PDF, DOCX, TXT or MD file; it is processed in the background and becomes searchable |
+| **Memory** | What the assistant remembered, with where it came from. Edit or forget anything |
+
+### About the "demo" parts (read this)
+
+To make the project free and runnable by anyone, three things are **built-in stand-ins**, each behind an
+interface so the real thing is a small adapter away:
+
+| Stand-in | What it is | Real version |
+|---|---|---|
+| **Assistant model** (`LLM_PROVIDER=fake`) | A rule-based parser that understands a few phrasings and emits real tool calls. *Not* intelligent: it exists to exercise the real pipeline (validation, tools, storage, UI). | Implement `LLMProvider` (`backend/app/llm/types.py`) |
+| **Embeddings** (`EMBEDDING_PROVIDER=fake`) | Hashes words into vectors: matches shared words, not meaning. | Implement `EmbeddingProvider` (`backend/app/embeddings/types.py`) |
+| **Google** (`GOOGLE_PROVIDER=demo`) | Canned, clearly fake calendar, mail and Drive data. | Add your own OAuth client: [docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md) |
+
+Everything else (authentication, workspaces, tasks, notes, document pipeline, search, memory, OAuth,
+encryption, briefing, suggestions) is the real implementation.
+
+## What's inside
+
+- **Accounts and workspaces:** Argon2 passwords, rotating refresh tokens with reuse detection, and per-workspace isolation enforced in every query.
+- **Tasks and notes:** priorities, due dates, tags, full-text search.
+- **Documents:** upload TXT/MD/PDF/DOCX → validated and stored → text extracted, chunked and embedded in the background → semantic search.
+- **Memory:** durable facts with provenance, saved only when worth remembering, with duplicate and size limits.
+- **Unified search:** tasks and notes by full-text SQL, documents and memories by meaning, merged into one ranked list, with filters typed into the query.
+- **Assistant:** a tool system where the model's output is untrusted, validated against strict schemas, and can only call the same services the REST API uses.
+- **Google (read-only):** Gmail, Calendar with conflict detection, and Drive (importable into Documents); OAuth with signed state, encrypted tokens and revocation.
+- **Proactive:** a daily briefing and email-derived suggestions that need your approval before becoming tasks.
+
+## How it's built
 
 ```
-cp .env.example .env          # then edit the values (never commit .env)
-docker compose up -d --build
-docker compose exec backend alembic upgrade head
+Browser → Next.js (UI + backend-for-frontend) → FastAPI → services → repositories → PostgreSQL + pgvector
 ```
 
-**Frontend** (Next.js, runs on the host):
+**Stack:** Python 3.12 · FastAPI · async SQLAlchemy 2 · Alembic · PostgreSQL 16 with pgvector · Next.js 16 · React 19 · TypeScript · Tailwind · TanStack Query · Docker Compose · GitHub Actions.
 
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): layers, data model, the assistant flow, search, and the decisions behind them
+- [docs/SECURITY.md](docs/SECURITY.md): what is protected and how, and the honest list of what isn't
+- [docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md): connecting a real Google account
+- [docs/PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md): the original product brief this was built from
+
+## Tests and quality
+
+Over **350 backend tests** run on every push (real Postgres with pgvector, real migrations), alongside
+frontend lint, type-check and production build. CI also fails if the database models and migrations
+drift apart.
+
+```bash
+docker compose exec backend python -m pytest      # backend tests
+cd frontend && npm run lint && npx tsc --noEmit && npm run build
 ```
-cd frontend
-npm install
-npm run dev
-```
 
-- App: http://localhost:3000
-- API: http://localhost:8000
-- Swagger docs: http://localhost:8000/docs
-- Health: http://localhost:8000/api/v1/health
-- Postgres from the host: `localhost:5433` (5433 avoids clashing with a local Postgres on 5432)
+## Everyday commands
 
-The frontend reads `BACKEND_URL` (server-side only, default `http://localhost:8000`). To change it, create `frontend/.env.local`.
-
-## Common commands
-
-```
-docker compose exec backend python -m pytest                    # backend tests
+```bash
 docker compose exec backend alembic revision --autogenerate -m "message"   # new migration
-docker compose exec backend alembic upgrade head                # apply migrations
-docker compose logs -f backend                                  # follow logs
-docker compose down                                             # stop (data kept in volume)
-
-cd frontend && npm run lint && npm run build                    # frontend checks
+docker compose exec backend python -m scripts.seed_demo --reset            # recreate the demo account
+docker compose logs -f backend                                             # follow logs
+docker compose down                                                        # stop (data is kept)
 ```
 
-## Architecture
+Services: app `localhost:3000` · API `localhost:8000` (Swagger at `/docs`) · Postgres `localhost:5433`.
 
-```
-Browser -> Next.js (UI + BFF routes) -> FastAPI -> services -> repositories -> PostgreSQL
-```
+## Roadmap
 
-**Backend** (`backend/app/`): `api/` HTTP routes only, `services/` business logic, `repositories/` data access (every query scoped by workspace), `models/` + `schemas/`, `core/` config, logging, errors and security, `db/` session and base.
+Ideas for taking it further: a real LLM and embedding adapter (a local model through Ollama would keep it
+free), a job queue for background work, rate limiting, email verification, object storage for documents,
+and a proactive scheduler for the email scan.
 
-**Frontend** (`frontend/`): `app/` pages and route handlers, `components/`, `hooks/` (React Query data hooks), `services/` (typed API calls), `lib/` (API client, types, helpers).
+## License
 
-**The browser never holds an API token.** Next.js acts as a backend-for-frontend: `/api/session/*` signs in and stores the access and refresh tokens in `httpOnly` cookies, and `/api/backend/*` is an authenticated proxy to the API that attaches the token and refreshes it when it expires. Concurrent refreshes are de-duplicated, because the backend rotates refresh tokens and treats reuse of an old one as theft. Mutating requests must come from the same origin.
-
-### The AI assistant
-
-```
-chat endpoint -> AssistantService -> Orchestrator -> LLMProvider (fake today, real model later)
-                                          |
-                                          +-> ToolRegistry -> TaskService / NoteService (the same code the REST API uses)
-```
-
-The model decides *what* to do; only the application's services can do it. Model output is treated as untrusted input: the tool name must be registered and the arguments must pass a strict schema (unknown fields such as `workspace_id` are rejected), failures go back to the model as errors and are never reported as success. The workspace is taken from the authorized request, never from the model. Tools today: `create_task`, `search_tasks`, `create_note`, `search_notes` (no delete or external-send tools yet). Only recent message text is sent to the model as context, not whole histories.
-
-To add a real model, implement `LLMProvider` (`backend/app/llm/types.py`) for it and register it in `backend/app/llm/factory.py`; nothing else changes.
-
-Note: that refresh de-duplication state lives in the Next.js process. A multi-instance deployment needs shared state (for example Redis) or sticky routing.
+[MIT](LICENSE)

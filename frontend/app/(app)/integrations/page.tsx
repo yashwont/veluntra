@@ -288,6 +288,13 @@ export default function IntegrationsPage() {
         never send, create, change or delete anything in Google. You can disconnect at any time.
       </p>
 
+      {data?.demo && (
+        <p role="note" className="mb-4 rounded-lg bg-accent-soft px-3.5 py-2.5 text-sm text-accent">
+          <strong>Demo mode:</strong> this server simulates Google with sample data, so you can try everything without
+          an account. Nothing here is real, and no real Google account is contacted.
+        </p>
+      )}
+
       {/* Google sends the browser back here with the result in the address */}
       <Suspense>
         <OutcomeBanner />

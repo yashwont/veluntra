@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     # Google integrations (Gmail, Calendar, Drive: read-only). Create an OAuth client in
     # Google Cloud Console (see docs/GOOGLE_SETUP.md); without these, connecting is
     # simply unavailable.
+    # "demo" serves canned, clearly fake Google data and needs no credentials: for trying
+    # the app, demos and screenshots. "real" talks to Google (needs the client ID/secret).
+    google_provider: str = "real"
     google_client_id: str = ""
     google_client_secret: str = ""
     # Where this API is reachable from the user's browser: Google redirects back to
@@ -58,7 +61,13 @@ class Settings(BaseSettings):
 
     @property
     def google_configured(self) -> bool:
+        if self.google_provider == "demo":
+            return True
         return bool(self.google_client_id and self.google_client_secret)
+
+    @property
+    def google_demo(self) -> bool:
+        return self.google_provider == "demo"
 
     @property
     def database_url(self) -> URL:

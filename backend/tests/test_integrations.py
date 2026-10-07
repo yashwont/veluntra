@@ -102,7 +102,7 @@ async def test_unconfigured_server_cannot_connect(make_user, client) -> None:
     listing = await accounts(client, alice)
     response = await client.post(f"{base(alice.workspace_id)}/google/connect", headers=alice.headers)
 
-    assert listing == {"google_configured": False, "accounts": []}
+    assert listing == {"demo": False, "google_configured": False, "accounts": []}
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "INTEGRATION_NOT_CONFIGURED"
 

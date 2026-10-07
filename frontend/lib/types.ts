@@ -175,6 +175,8 @@ export interface IntegrationAccount {
 }
 
 export interface IntegrationsResponse {
+  /** True when Google is simulated with canned demo data (no real account is touched). */
+  demo: boolean;
   /** False when the server has no Google client ID/secret, so connecting is impossible. */
   google_configured: boolean;
   accounts: IntegrationAccount[];

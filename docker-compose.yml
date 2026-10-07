@@ -28,7 +28,8 @@ services:
     volumes:
       # Mount source so code changes reload without rebuilding
       - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Apply any pending database migrations, then start the API
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       db:
         condition: service_healthy

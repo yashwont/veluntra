@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Veluntra frontend
 
-## Getting Started
-
-First, run the development server:
+The web app: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS and TanStack Query.
+See the [project README](../README.md) for what Veluntra is and how to run all of it.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000 (needs the API on http://localhost:8000)
+npm run lint
+npx tsc --noEmit
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The API address comes from `BACKEND_URL` (server-side only, default `http://localhost:8000`);
+override it in `frontend/.env.local`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How it's organised
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Folder | Holds |
+|---|---|
+| `app/(app)/` | The signed-in pages: Today, Tasks, Notes, Documents, Memory, Search, Connections, Assistant |
+| `app/(auth)/` | Login and register |
+| `app/api/session/*` | Sign-in, register and sign-out: they set and clear the `httpOnly` token cookies |
+| `app/api/backend/[...path]` | Authenticated proxy to the API: attaches the token, refreshes it when it expires, passes uploads and downloads through unchanged |
+| `components/` | Shared UI (`ui.tsx`) and feature components |
+| `hooks/` | One React Query hook per area (`use-tasks`, `use-documents`, `use-briefing`...) |
+| `services/` | Typed API calls, one file per area |
+| `lib/` | API client, shared types, date and label helpers |
 
-## Learn More
+**The browser never holds an API token.** The server-side routes above are a backend-for-frontend:
+tokens stay in cookies JavaScript can't read, and mutating requests must come from the same origin.
+Details in [docs/SECURITY.md](../docs/SECURITY.md).
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> This project uses a recent Next.js with changes from earlier versions. Before changing framework
+> behaviour, read the matching guide in `node_modules/next/dist/docs/`.
