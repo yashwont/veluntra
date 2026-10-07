@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.db.session import SessionLocal
 from app.documents.chunking import chunk_text
 from app.documents.extract import ExtractionError, extract_text
+from app.embeddings.errors import EmbeddingError
 from app.embeddings.factory import get_embedding_provider
 from app.embeddings.types import EmbeddingProvider
 from app.models.document import Document, DocumentStatus
@@ -70,8 +71,8 @@ async def process_document(
             )
         except Exception as exc:
             await session.rollback()
-            if isinstance(exc, ExtractionError):
-                message = str(exc)  # written for users
+            if isinstance(exc, (ExtractionError, EmbeddingError)):
+                message = str(exc)  # written for users: says what to fix, no document text
             else:
                 logger.exception("document processing failed", extra={"document_id": str(document_id)})
                 message = "Processing failed unexpectedly. Try reprocessing the document."

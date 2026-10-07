@@ -76,6 +76,13 @@ export default function AssistantPage() {
         </p>
       )}
 
+      {status.data && !status.data.demo && (
+        <p className="mb-3 text-xs text-muted-foreground">
+          Answering with {status.data.model ?? status.data.provider}
+          {status.data.provider === "ollama" ? ", running on this computer" : ""}.
+        </p>
+      )}
+
       <div
         className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-border bg-background p-4"
         aria-live="polite"

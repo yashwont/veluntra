@@ -11,4 +11,8 @@ def get_embedding_provider() -> EmbeddingProvider:
     provider = get_settings().embedding_provider.lower()
     if provider == "fake":
         return FakeEmbeddingProvider()
-    raise RuntimeError(f"Unknown EMBEDDING_PROVIDER '{provider}'. Supported: fake.")
+    if provider == "ollama":
+        from app.embeddings.ollama import OllamaEmbeddingProvider  # only imported when used
+
+        return OllamaEmbeddingProvider()
+    raise RuntimeError(f"Unknown EMBEDDING_PROVIDER '{provider}'. Supported: fake, ollama.")

@@ -59,6 +59,19 @@ class Settings(BaseSettings):
     # when empty (generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
     integration_encryption_key: str = ""
 
+    # Ollama: free, local AI models (see docs/OLLAMA_SETUP.md). Used when LLM_PROVIDER=ollama
+    # (the assistant) and/or EMBEDDING_PROVIDER=ollama (search by meaning).
+    # The API runs in Docker, so "the host" is host.docker.internal, not localhost.
+    ollama_base_url: str = "http://host.docker.internal:11434"
+    ollama_model: str = "llama3.2:3b"  # must support tool calling; small enough for a laptop CPU
+    # Must produce 384-number vectors (the database column width): all-minilm does
+    ollama_embedding_model: str = "all-minilm"
+    # Local models on a CPU can be slow: allow a long wait before giving up
+    ollama_timeout_seconds: float = Field(default=180, ge=5, le=1800)
+    # The model's context window in tokens. Ollama's default can be smaller than the
+    # assistant's tool list plus prompt, which would silently cut the start off.
+    ollama_num_ctx: int = Field(default=8192, ge=2048, le=131072)
+
     @property
     def google_configured(self) -> bool:
         if self.google_provider == "demo":

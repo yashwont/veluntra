@@ -83,7 +83,8 @@ The model decides *what* should happen; only application services can *do* it. M
 untrusted input. Workspace and user come from the authenticated request, never from the model.
 There are no delete or send tools. Only the last few messages and a few relevant memories are
 sent as context. The `LLMProvider` interface (`app/llm/types.py`) is the only thing a real model
-adapter must implement.
+adapter must implement; a free, local one for Ollama is included (`app/llm/ollama.py`, with matching
+embeddings in `app/embeddings/ollama.py`; see [OLLAMA_SETUP.md](OLLAMA_SETUP.md)).
 
 Tools: tasks, notes, documents, memories, unified search, Google (email, calendar, Drive),
 and the daily briefing.

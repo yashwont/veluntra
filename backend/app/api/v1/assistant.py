@@ -42,7 +42,9 @@ async def assistant_status(
     _membership: WorkspaceMember = Depends(get_workspace_membership),
     provider: LLMProvider = Depends(get_llm_provider),
 ) -> AssistantStatus:
-    return AssistantStatus(provider=provider.name, demo=provider.name == "fake")
+    return AssistantStatus(
+        provider=provider.name, demo=provider.name == "fake", model=getattr(provider, "model", None)
+    )
 
 
 @router.post("/assistant/chat", response_model=ChatResponse, summary="Chat with the assistant")

@@ -22,6 +22,12 @@ DUPLICATE_SCORE = 0.9
 MAX_MEMORIES_PER_WORKSPACE = 1000
 
 
+def memory_embedding_text(content: str, subject: str | None) -> str:
+    """The text a memory is embedded as. The subject is part of what the memory is about,
+    so it takes part in matching."""
+    return f"{subject}: {content}" if subject else content
+
+
 class MemoryNotFoundError(NotFoundError):
     code = "MEMORY_NOT_FOUND"
     message = "The requested memory does not exist."
@@ -78,9 +84,7 @@ class MemoryService:
         self.embeddings = embeddings or get_embedding_provider()
 
     async def _embed(self, content: str, subject: str | None) -> list[float]:
-        # The subject is part of what the memory is about, so it takes part in matching
-        text = f"{subject}: {content}" if subject else content
-        [vector] = await self.embeddings.embed([text])
+        [vector] = await self.embeddings.embed([memory_embedding_text(content, subject)])
         return vector
 
     async def create(

@@ -332,6 +332,8 @@ export interface ChatResponse {
 }
 
 export interface AssistantStatus {
+  /** The model name when there is one, e.g. "llama3.2:3b". */
+  model?: string | null;
   provider: string;
   /** True when the built-in demo model is answering instead of a real AI model. */
   demo: boolean;

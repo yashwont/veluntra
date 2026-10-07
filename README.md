@@ -48,8 +48,8 @@ interface so the real thing is a small adapter away:
 
 | Stand-in | What it is | Real version |
 |---|---|---|
-| **Assistant model** (`LLM_PROVIDER=fake`) | A rule-based parser that understands a few phrasings and emits real tool calls. *Not* intelligent: it exists to exercise the real pipeline (validation, tools, storage, UI). | Implement `LLMProvider` (`backend/app/llm/types.py`) |
-| **Embeddings** (`EMBEDDING_PROVIDER=fake`) | Hashes words into vectors: matches shared words, not meaning. | Implement `EmbeddingProvider` (`backend/app/embeddings/types.py`) |
+| **Assistant model** (`LLM_PROVIDER=fake`) | A rule-based parser that understands a few phrasings and emits real tool calls. *Not* intelligent: it exists to exercise the real pipeline (validation, tools, storage, UI). | **Free, local:** run a real model on your own computer with Ollama: [docs/OLLAMA_SETUP.md](docs/OLLAMA_SETUP.md). Or implement `LLMProvider` (`backend/app/llm/types.py`) for any other model |
+| **Embeddings** (`EMBEDDING_PROVIDER=fake`) | Hashes words into vectors: matches shared words, not meaning. | **Free, local:** real embeddings through Ollama (same guide). Or implement `EmbeddingProvider` (`backend/app/embeddings/types.py`) |
 | **Google** (`GOOGLE_PROVIDER=demo`) | Canned, clearly fake calendar, mail and Drive data. | Add your own OAuth client: [docs/GOOGLE_SETUP.md](docs/GOOGLE_SETUP.md) |
 
 Everything else (authentication, workspaces, tasks, notes, document pipeline, search, memory, OAuth,
@@ -103,9 +103,9 @@ Services: app `localhost:3000` · API `localhost:8000` (Swagger at `/docs`) · P
 
 ## Roadmap
 
-Ideas for taking it further: a real LLM and embedding adapter (a local model through Ollama would keep it
-free), a job queue for background work, rate limiting, email verification, object storage for documents,
-and a proactive scheduler for the email scan.
+Ideas for taking it further: a hosted-model adapter (a local one through Ollama already exists), a job queue
+for background work, rate limiting, email verification, object storage for documents, and a proactive
+scheduler for the email scan.
 
 ## License
 

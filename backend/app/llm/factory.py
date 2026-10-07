@@ -12,5 +12,8 @@ def get_llm_provider() -> LLMProvider:
     provider = get_settings().llm_provider.lower()
     if provider == "fake":
         return FakeProvider()
-    # "anthropic" is added together with the real adapter
-    raise RuntimeError(f"Unknown LLM_PROVIDER '{provider}'. Supported: fake.")
+    if provider == "ollama":
+        from app.llm.ollama import OllamaProvider  # only imported when used
+
+        return OllamaProvider()
+    raise RuntimeError(f"Unknown LLM_PROVIDER '{provider}'. Supported: fake, ollama.")

@@ -23,6 +23,10 @@ services:
   backend:
     build: ./backend
     env_file: .env
+    # Lets the API reach Ollama running on your computer (Docker Desktop provides this name
+    # itself; Linux needs this line)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:8000:8000"
     volumes:

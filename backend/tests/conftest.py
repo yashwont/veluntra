@@ -7,6 +7,11 @@ os.environ["POSTGRES_DB"] = TEST_DB
 # Tests must never reach a real (paid) model, whatever the developer's .env says
 os.environ["LLM_PROVIDER"] = "fake"
 os.environ["EMBEDDING_PROVIDER"] = "fake"
+# ...nor on Google or Ollama settings in .env: tests start from "Google not configured" and
+# opt in (the `google` fixture, monkeypatch) to anything else
+os.environ["GOOGLE_PROVIDER"] = "real"
+os.environ["GOOGLE_CLIENT_ID"] = ""
+os.environ["GOOGLE_CLIENT_SECRET"] = ""
 # Uploaded files go to a throwaway directory, never the developer's real storage
 import tempfile  # noqa: E402
 

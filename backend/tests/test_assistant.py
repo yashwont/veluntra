@@ -44,8 +44,8 @@ async def test_status_reports_demo_mode_and_messages_carry_their_provider(
     use_provider(ScriptedProvider())
     real = (await client.get(url, headers=alice.headers)).json()
 
-    assert demo == {"provider": "fake", "demo": True}
-    assert real == {"provider": "scripted", "demo": False}
+    assert demo == {"provider": "fake", "demo": True, "model": None}
+    assert real == {"provider": "scripted", "demo": False, "model": None}
     assert reply["message"]["provider"] == "fake"
 
 

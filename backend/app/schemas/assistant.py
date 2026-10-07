@@ -63,6 +63,7 @@ class MessageRead(BaseModel):
 class AssistantStatus(BaseModel):
     provider: str
     demo: bool = Field(description="True when running the built-in demo model instead of a real AI model.")
+    model: str | None = Field(default=None, description="The model name, when the provider has one (e.g. llama3.2:3b).")
 
 
 class ChatResponse(BaseModel):
