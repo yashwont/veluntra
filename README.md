@@ -92,7 +92,7 @@ drift apart.
 
 ```bash
 docker compose exec backend python -m pytest      # backend tests
-cd frontend && npm run lint && npx tsc --noEmit && npm run build
+cd frontend && npm run lint && npm run typecheck && npm run build
 ```
 
 ## Everyday commands

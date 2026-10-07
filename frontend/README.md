@@ -7,7 +7,7 @@ See the [project README](../README.md) for what Veluntra is and how to run all o
 npm install
 npm run dev        # http://localhost:3000 (needs the API on http://localhost:8000)
 npm run lint
-npx tsc --noEmit
+npm run typecheck   # generates Next.js types, then runs tsc
 npm run build
 ```
 
