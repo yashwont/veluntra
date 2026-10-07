@@ -2,6 +2,7 @@
 from app.models.refresh_token import RefreshToken
 from app.models.conversation import Conversation, Message, MessageRole
 from app.models.document import Document, DocumentChunk, DocumentStatus
+from app.models.integration import IntegrationAccount, IntegrationProvider, IntegrationStatus
 from app.models.memory import Memory, MemoryKind, MemorySource
 from app.models.note import Note
 from app.models.task import Task, TaskPriority, TaskStatus
@@ -14,6 +15,9 @@ __all__ = [
     "Document",
     "DocumentChunk",
     "DocumentStatus",
+    "IntegrationAccount",
+    "IntegrationProvider",
+    "IntegrationStatus",
     "Memory",
     "MemoryKind",
     "MemorySource",

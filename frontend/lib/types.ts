@@ -160,6 +160,62 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+// --- Integrations (Google) ----------------------------------------------------
+
+export interface IntegrationAccount {
+  id: string;
+  provider: "google";
+  account_email: string | null;
+  /** "needs_reauth" means access was revoked or expired: the user must reconnect. */
+  status: "active" | "needs_reauth";
+  gmail: boolean;
+  calendar: boolean;
+  drive: boolean;
+  created_at: string;
+}
+
+export interface IntegrationsResponse {
+  /** False when the server has no Google client ID/secret, so connecting is impossible. */
+  google_configured: boolean;
+  accounts: IntegrationAccount[];
+}
+
+export interface EmailSummary {
+  id: string;
+  thread_id: string;
+  sender: string;
+  subject: string;
+  date: string | null;
+  snippet: string;
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  all_day: boolean;
+  location: string | null;
+  attendees: string[];
+  link: string | null;
+  declined: boolean;
+}
+
+export interface CalendarResponse {
+  events: CalendarEvent[];
+  /** Pairs of event ids that overlap in time. */
+  conflicts: [string, string][];
+}
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  mime_type: string;
+  modified_at: string | null;
+  link: string | null;
+  size: number | null;
+}
+
 // --- AI assistant -----------------------------------------------------------
 
 /** One tool the assistant ran while answering: what it did and whether it worked. */

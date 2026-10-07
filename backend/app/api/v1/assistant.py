@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_workspace_membership
 from app.db.session import get_session
+from app.integrations.google.factory import get_google_api
+from app.integrations.google.types import GoogleApi
 from app.llm.factory import get_llm_provider
 from app.llm.types import LLMProvider
 from app.models.user import User
@@ -29,9 +31,10 @@ async def get_assistant_service(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     provider: LLMProvider = Depends(get_llm_provider),
+    google: GoogleApi = Depends(get_google_api),
 ) -> AssistantService:
     """Builds the service for this workspace, after authorizing access."""
-    return AssistantService(session, user, workspace_id, provider)
+    return AssistantService(session, user, workspace_id, provider, google=google)
 
 
 @router.get("/assistant/status", response_model=AssistantStatus, summary="Which model is answering")

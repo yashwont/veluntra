@@ -25,6 +25,7 @@ from sqlalchemy import text  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
 from app.db.session import engine  # noqa: E402
+from app.integrations.google.factory import get_google_api  # noqa: E402
 from app.llm.factory import get_llm_provider  # noqa: E402
 from app.main import app  # noqa: E402
 
@@ -92,6 +93,20 @@ def use_provider():
 
     yield _use
     app.dependency_overrides.pop(get_llm_provider, None)
+
+
+@pytest.fixture
+def google(monkeypatch):
+    """A configured, fake Google: connecting works, and tests control its data."""
+    from tests.fakes import FakeGoogleApi
+
+    fake = FakeGoogleApi()
+    settings = get_settings()
+    monkeypatch.setattr(settings, "google_client_id", "test-client-id")
+    monkeypatch.setattr(settings, "google_client_secret", "test-client-secret")
+    app.dependency_overrides[get_google_api] = lambda: fake
+    yield fake
+    app.dependency_overrides.pop(get_google_api, None)
 
 
 PASSWORD = "a-long-test-password"

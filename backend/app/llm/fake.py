@@ -36,7 +36,10 @@ HELP = (
     "- \"Search notes for proposal\"\n"
     "- \"Remember that Ram prefers email over calls\"\n"
     "- \"What do you remember about Ram?\"\n"
-    "- \"Search everything for proposal\""
+    "- \"Search everything for proposal\"\n"
+    "- \"What is on my calendar this week?\"\n"
+    "- \"Search my email for invoice\"\n"
+    "- \"Search my drive for budget\""
 )
 
 
@@ -116,6 +119,19 @@ class FakeProvider:
         )
         if everywhere:
             return self._call("search_everything", {"query": everywhere.group(1).strip(" ?.!\"'")})
+        # Looking things up in Google: but "remind me to email Ram" is still a task
+        lookup = not re.search(r"\bremind me\b|\btask\b|\bnote\b|\bremember\b", lowered)
+        if lookup and re.search(r"\b(calendar|schedule|meetings?|agenda)\b", lowered):
+            days = 1 if re.search(r"\btoday\b", lowered) else 7 if re.search(r"\bweek\b", lowered) else 3
+            return self._call("get_calendar", {"days": days})
+        if lookup and re.search(r"\b(e-?mails?|inbox|gmail)\b", lowered):
+            about = re.search(r"\b(?:for|about|from)\s+(.+)$", text, re.I)
+            query = about.group(1).strip(" ?.!\"'") if about else ""
+            return self._call("search_email", {"query": query})
+        if lookup and re.search(r"\bdrive\b", lowered):
+            about = re.search(r"\b(?:for|about)\s+(.+)$", text, re.I)
+            query = about.group(1).strip(" ?.!\"'") if about else ""
+            return self._call("search_drive", {"query": query})
         remember = re.match(r"(?:please )?remember(?: that)?[:,]?\s+(.+)$", text.strip(), re.I)
         if remember:
             return self._remember(remember.group(1))
@@ -242,6 +258,33 @@ class FakeProvider:
                 else:
                     shown = "\n".join(f"- [{r['type']}] {r['title']}" for r in found)
                     lines.append(f"I found {len(found)} result(s):\n{shown}")
+            elif name == "get_calendar":
+                events = payload["events"]
+                if not events:
+                    lines.append("Your calendar is clear for that period.")
+                else:
+                    shown = "\n".join(f"- {e['start'][:16].replace('T', ' ')}  {e['title']}" for e in events)
+                    clash = (
+                        "\nHeads up, these overlap: "
+                        + "; ".join(" and ".join(c["between"]) for c in payload["conflicts"])
+                        if payload["conflicts"]
+                        else ""
+                    )
+                    lines.append(f"Here is your schedule:\n{shown}{clash}")
+            elif name == "search_email":
+                found = payload["emails"]
+                if not found:
+                    lines.append("I found no matching emails.")
+                else:
+                    shown = "\n".join(f"- {e['subject']} (from {e['from']})" for e in found)
+                    lines.append(f"I found {len(found)} email(s):\n{shown}")
+            elif name == "search_drive":
+                found = payload["files"]
+                if not found:
+                    lines.append("I found no matching Drive files.")
+                else:
+                    shown = "\n".join(f"- {f['name']}" for f in found)
+                    lines.append(f"I found {len(found)} file(s) in Drive:\n{shown}")
             elif name == "search_notes":
                 found = payload["notes"]
                 if not found:

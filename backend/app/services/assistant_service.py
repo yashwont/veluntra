@@ -10,6 +10,7 @@ from app.agents.orchestrator import Orchestrator
 from app.agents.prompts import build_system_prompt
 from app.core.config import get_settings
 from app.core.errors import AppError, NotFoundError
+from app.integrations.google.types import GoogleApi
 from app.llm.errors import LLMError
 from app.llm.types import LLMProvider, TextTurn
 from app.models.conversation import Conversation, Message, MessageRole
@@ -79,12 +80,14 @@ class AssistantService:
         workspace_id: uuid.UUID,
         provider: LLMProvider,
         registry: ToolRegistry | None = None,
+        google: GoogleApi | None = None,
     ) -> None:
         self.session = session
         self.user = user
         self.workspace_id = workspace_id
         self.provider = provider
         self.registry = registry or default_registry()
+        self.google = google
         self.conversations = ConversationRepository(session)
 
     async def chat(
@@ -122,6 +125,7 @@ class AssistantService:
             user_id=self.user.id,
             timezone=tz,
             conversation_id=conversation.id,
+            google=self.google,
         )
         try:
             result = await orchestrator.run(
@@ -137,6 +141,11 @@ class AssistantService:
                 extra={"provider": self.provider.name, "workspace_id": str(self.workspace_id)},
             )
             raise AssistantUnavailableError() from None
+
+        # A tool that failed rolled the session back, which expires loaded objects
+        # (everything was committed before the model ran, so nothing is lost). Reload
+        # the conversation instead of touching its expired attributes.
+        await self.session.refresh(conversation)
 
         reply = Message(
             conversation_id=conversation.id,

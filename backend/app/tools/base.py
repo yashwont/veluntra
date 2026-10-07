@@ -8,6 +8,8 @@ from zoneinfo import ZoneInfo
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.integrations.google.types import GoogleApi
+
 
 @dataclass(frozen=True)
 class ToolContext:
@@ -20,6 +22,8 @@ class ToolContext:
     timezone: ZoneInfo
     # The conversation the request came from: provenance for what the assistant stores
     conversation_id: uuid.UUID | None = None
+    # The Google client, for tools that read mail/calendar/Drive (None if unavailable)
+    google: GoogleApi | None = None
 
     def end_of_day(self, day: date) -> datetime:
         """A due *date* means the end of that day in the user's timezone."""

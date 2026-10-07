@@ -10,7 +10,7 @@ from argon2.exceptions import InvalidHashError, VerificationError
 from app.core.config import get_settings
 from app.core.errors import AuthenticationError
 
-TokenType = Literal["access", "refresh"]
+TokenType = Literal["access", "refresh", "oauth_state"]
 
 _ALGORITHM = "HS256"
 _password_hasher = PasswordHasher()
@@ -95,3 +95,33 @@ def decode_token(token: str, expected_type: TokenType) -> dict[str, Any]:
         # Stops a refresh token being used as an access token, and vice versa
         raise AuthenticationError("Invalid or expired token.")
     return claims
+
+
+# --- OAuth state ---------------------------------------------------------------
+# The `state` value sent to an external provider and echoed back on the callback.
+# Signed, short-lived and bound to one user and workspace, so a forged or stale
+# callback cannot connect an account to someone else.
+
+OAUTH_STATE_MINUTES = 10
+
+
+def create_oauth_state(user_id: uuid.UUID, workspace_id: uuid.UUID) -> str:
+    now = datetime.now(timezone.utc)
+    claims: dict[str, Any] = {
+        "sub": str(user_id),
+        "ws": str(workspace_id),
+        "type": "oauth_state",
+        "iat": now,
+        "exp": now + timedelta(minutes=OAUTH_STATE_MINUTES),
+        "jti": str(uuid.uuid4()),
+    }
+    return jwt.encode(claims, get_settings().secret_key, algorithm=_ALGORITHM)
+
+
+def decode_oauth_state(state: str) -> tuple[uuid.UUID, uuid.UUID]:
+    """Returns (user_id, workspace_id). Raises AuthenticationError if invalid."""
+    claims = decode_token(state, "oauth_state")
+    try:
+        return uuid.UUID(claims["sub"]), uuid.UUID(claims["ws"])
+    except (KeyError, ValueError) as exc:
+        raise AuthenticationError("Invalid or expired token.") from exc

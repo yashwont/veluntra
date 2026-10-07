@@ -42,6 +42,24 @@ class Settings(BaseSettings):
     # the pipeline. A real provider is added together with its adapter.
     embedding_provider: str = "fake"
 
+    # Google integrations (Gmail, Calendar, Drive: read-only). Create an OAuth client in
+    # Google Cloud Console (see docs/GOOGLE_SETUP.md); without these, connecting is
+    # simply unavailable.
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    # Where this API is reachable from the user's browser: Google redirects back to
+    # {public_backend_url}/api/v1/integrations/google/callback
+    public_backend_url: str = "http://localhost:8000"
+    # Where the user is sent after connecting
+    frontend_url: str = "http://localhost:3000"
+    # Fernet key for encrypting stored OAuth tokens. Optional: derived from SECRET_KEY
+    # when empty (generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+    integration_encryption_key: str = ""
+
+    @property
+    def google_configured(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret)
+
     @property
     def database_url(self) -> URL:
         # URL.create escapes special characters in the password safely
