@@ -11,11 +11,6 @@ It started as a question: *how do you let an AI act on someone's personal data a
 The answer here: the model proposes, the application's own rules decide, the user approves anything that
 matters, and every action is recorded.
 
-<!-- Screenshots: add images to docs/screenshots/ and uncomment.
-![Today](docs/screenshots/today.png)
-![Assistant](docs/screenshots/assistant.png)
--->
-
 ## Try it (about 5 minutes, no accounts, no API keys, no cost)
 
 You need **Docker Desktop**, **Python 3** and **Node.js 20+**.
