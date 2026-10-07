@@ -13,6 +13,7 @@ const NAV = [
   { href: "/", label: "Home", icon: "M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10" },
   { href: "/tasks", label: "Tasks", icon: "M9 11.5 11 13.5 15.5 9M5 4h14v16H5z" },
   { href: "/notes", label: "Notes", icon: "M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5" },
+  { href: "/documents", label: "Documents", icon: "M7 3h7l4 4v14H7zM14 3v5h4M10 13h5M10 17h5" },
   { href: "/assistant", label: "Assistant", icon: "M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" },
 ] as const;
 

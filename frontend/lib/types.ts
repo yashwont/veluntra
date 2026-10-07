@@ -64,6 +64,32 @@ export interface NoteSummary {
   updated_at: string;
 }
 
+// --- Documents ---------------------------------------------------------------
+
+export type DocumentStatus = "pending" | "processing" | "ready" | "failed";
+
+export interface DocumentItem {
+  id: string;
+  workspace_id: string;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  status: DocumentStatus;
+  error: string | null;
+  chunk_count: number;
+  created_at: string;
+  processed_at: string | null;
+}
+
+/** A passage from a document that matched a search. */
+export interface DocumentSearchHit {
+  document_id: string;
+  filename: string;
+  chunk_index: number;
+  content: string;
+  score: number;
+}
+
 // --- AI assistant -----------------------------------------------------------
 
 /** One tool the assistant ran while answering: what it did and whether it worked. */

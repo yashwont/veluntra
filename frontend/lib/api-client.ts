@@ -40,12 +40,15 @@ function buildQuery(query?: Record<string, QueryValue>): string {
 }
 
 async function request<T>(url: string, method: string, body?: unknown): Promise<T> {
+  // FormData is sent as-is: the browser sets the multipart Content-Type (with its
+  // boundary) itself, so it must not be set here.
+  const isForm = body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(url, {
       method,
-      headers: body !== undefined ? { "Content-Type": "application/json" } : undefined,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      headers: body !== undefined && !isForm ? { "Content-Type": "application/json" } : undefined,
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       credentials: "same-origin",
     });
   } catch {
@@ -85,6 +88,13 @@ export function api<T>(
     options.method ?? "GET",
     options.body,
   );
+}
+
+/** Upload one file as multipart form data: apiUpload("workspaces/…/documents", file). */
+export function apiUpload<T>(path: string, file: File, field = "file"): Promise<T> {
+  const form = new FormData();
+  form.append(field, file);
+  return request<T>(`/api/backend/${path}`, "POST", form);
 }
 
 /** Session endpoints (login/register/logout), which set or clear the cookies. */

@@ -30,14 +30,17 @@ type Context = RouteContext<"/api/backend/[...path]">;
 async function forward(
   url: string,
   method: string,
-  body: string | undefined,
+  body: ArrayBuffer | undefined,
+  contentType: string | null,
   accessToken: string,
 ): Promise<Response> {
   return fetch(url, {
     method,
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
+      // Passed through as received: JSON for most calls, multipart (with its
+      // boundary) for document uploads
+      ...(body !== undefined ? { "Content-Type": contentType ?? "application/json" } : {}),
     },
     body,
     cache: "no-store",
@@ -57,7 +60,10 @@ async function handle(request: NextRequest, context: Context) {
   }
 
   const url = `${BACKEND_URL}/api/v1/${path.join("/")}${request.nextUrl.search}`;
-  const body = isRead ? undefined : await request.text();
+  // Raw bytes, so uploads survive the hop unchanged. An empty body means "no body".
+  const raw = isRead ? undefined : await request.arrayBuffer();
+  const body = raw && raw.byteLength > 0 ? raw : undefined;
+  const contentType = request.headers.get("content-type");
 
   let accessToken = request.cookies.get(ACCESS_COOKIE)?.value;
   const refreshToken = request.cookies.get(REFRESH_COOKIE)?.value;
@@ -71,21 +77,26 @@ async function handle(request: NextRequest, context: Context) {
     }
     if (!accessToken) return unauthenticatedResponse();
 
-    let upstream = await forward(url, method, body, accessToken);
+    let upstream = await forward(url, method, body, contentType, accessToken);
 
     // Token rejected despite being present (e.g. revoked): try one renewal
     if (upstream.status === 401 && refreshToken && !renewed) {
       renewed = await refreshTokens(refreshToken);
       if (!renewed) return unauthenticatedResponse();
-      upstream = await forward(url, method, body, renewed.access_token);
+      upstream = await forward(url, method, body, contentType, renewed.access_token);
     }
 
+    // Bytes, not text: downloads of PDFs/DOCX must not be re-encoded
+    const headers: Record<string, string> = {
+      "Content-Type": upstream.headers.get("content-type") ?? "application/json",
+    };
+    for (const name of ["content-disposition", "x-content-type-options"]) {
+      const value = upstream.headers.get(name);
+      if (value) headers[name] = value;
+    }
     const response = new NextResponse(
-      upstream.status === 204 ? null : await upstream.text(),
-      {
-        status: upstream.status,
-        headers: { "Content-Type": upstream.headers.get("content-type") ?? "application/json" },
-      },
+      upstream.status === 204 ? null : await upstream.arrayBuffer(),
+      { status: upstream.status, headers },
     );
     if (renewed) setSessionCookies(response, renewed);
     return response;
