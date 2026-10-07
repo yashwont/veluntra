@@ -18,7 +18,8 @@ node_modules/
 .next/
 
 # Local file storage for uploads (later)
-storage/
+/backend/storage/
+/storage/
 uploads/
 
 # OS / editor

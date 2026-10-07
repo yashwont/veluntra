@@ -6,6 +6,11 @@ TEST_DB = "veluntra_test"
 os.environ["POSTGRES_DB"] = TEST_DB
 # Tests must never reach a real (paid) model, whatever the developer's .env says
 os.environ["LLM_PROVIDER"] = "fake"
+os.environ["EMBEDDING_PROVIDER"] = "fake"
+# Uploaded files go to a throwaway directory, never the developer's real storage
+import tempfile  # noqa: E402
+
+os.environ["DOCUMENT_STORAGE_DIR"] = tempfile.mkdtemp(prefix="veluntra_test_docs_")
 
 import subprocess  # noqa: E402
 import sys  # noqa: E402

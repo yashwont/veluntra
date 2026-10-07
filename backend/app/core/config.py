@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     # Only this many recent messages are sent to the model, never the whole history
     assistant_history_messages: int = Field(default=12, ge=0, le=50)
 
+    # Documents. Files live on local disk under this directory (never inside the
+    # web root); the database stores only an opaque key.
+    document_storage_dir: str = "storage/documents"
+    max_upload_bytes: int = Field(default=10 * 1024 * 1024, ge=1024)
+    # "fake" = deterministic offline embeddings, good enough to develop and test
+    # the pipeline. A real provider is added together with its adapter.
+    embedding_provider: str = "fake"
+
     @property
     def database_url(self) -> URL:
         # URL.create escapes special characters in the password safely

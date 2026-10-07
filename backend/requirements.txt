@@ -12,6 +12,12 @@ sqlalchemy[asyncio]==2.1.2
 asyncpg==0.31.0
 alembic==1.20.0
 
+# Documents: vector column type for embeddings, upload parsing, text extraction
+pgvector==0.4.2
+python-multipart==0.0.20
+pypdf==6.1.3
+python-docx==1.2.0
+
 # Security: Argon2 password hashing, JWT encode/decode
 argon2-cffi==25.1.0
 pyjwt==2.15.1

@@ -1,6 +1,7 @@
 import logging
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 
@@ -8,8 +9,18 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.logging import setup_logging
+from app.services.document_processing import recover_interrupted_documents
 
 logger = logging.getLogger("veluntra.request")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    try:
+        await recover_interrupted_documents()
+    except Exception:  # never block startup on housekeeping
+        logger.exception("could not recover interrupted documents")
+    yield
 
 
 def create_app() -> FastAPI:
@@ -20,6 +31,7 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         description="AI-powered personal operations system.",
         version="0.1.0",
+        lifespan=lifespan,
     )
 
     @app.middleware("http")

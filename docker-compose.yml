@@ -1,6 +1,7 @@
 services:
   db:
-    image: postgres:16-alpine
+    # pgvector build of Postgres 16: same data format as postgres:16, plus the vector extension
+    image: pgvector/pgvector:pg16
     env_file: .env
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
