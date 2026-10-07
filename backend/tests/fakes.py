@@ -55,6 +55,7 @@ from datetime import UTC, datetime, timedelta  # noqa: E402
 
 from app.integrations.google.types import (  # noqa: E402
     REQUESTED_SCOPES,
+    AwaitingReply,
     CalendarEvent,
     DriveContent,
     DriveFile,
@@ -88,6 +89,7 @@ class FakeGoogleApi:
         self.data_error: Exception | None = None  # raised by every data call
         self.emails: list[EmailSummary] = []
         self.email_bodies: dict[str, str] = {}
+        self.awaiting: list[AwaitingReply] = []
         self.events: list[CalendarEvent] = []
         self.files: list[DriveFile] = []
         self.downloads: dict[str, DriveContent | Exception] = {}
@@ -129,6 +131,10 @@ class FakeGoogleApi:
             if m.id == message_id:
                 return EmailMessage(**{**m.__dict__, "body": self.email_bodies.get(m.id, "")})
         raise GoogleApiError(404, "Google could not find that item.")
+
+    async def gmail_awaiting_reply(self, access_token: str, min_days: int, max_days: int, limit: int):
+        self._use(access_token)
+        return [a for a in self.awaiting if min_days <= a.days_waiting <= max_days][:limit]
 
     async def calendar_events(self, access_token: str, start: datetime, end: datetime):
         self._use(access_token)

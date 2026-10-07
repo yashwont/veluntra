@@ -216,6 +216,82 @@ export interface DriveFile {
   size: number | null;
 }
 
+// --- Briefing and suggestions ---------------------------------------------------
+
+export type SectionStatus = "ok" | "not_connected" | "needs_reauth" | "unavailable";
+
+export interface TaskBrief {
+  id: string;
+  title: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  due_date: string | null;
+}
+
+export interface PriorityItem extends TaskBrief {
+  /** Why it is on today's list, e.g. "Overdue by 3 days · High priority". */
+  reason: string;
+}
+
+export interface ContextItem {
+  type: "document" | "memory" | "note" | "task";
+  id: string;
+  title: string;
+  snippet: string;
+}
+
+export interface MeetingBrief {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  all_day: boolean;
+  location: string | null;
+  attendees: string[];
+  overlaps: boolean;
+  context: ContextItem[];
+}
+
+export interface FollowUp {
+  kind: "email" | "task" | "commitment";
+  title: string;
+  detail: string;
+  days_waiting: number;
+}
+
+export interface Briefing {
+  date: string;
+  timezone: string;
+  generated_at: string;
+  priorities: PriorityItem[];
+  overdue: TaskBrief[];
+  due_today: TaskBrief[];
+  due_tomorrow: TaskBrief[];
+  meetings: MeetingBrief[];
+  meetings_status: SectionStatus;
+  follow_ups: FollowUp[];
+  follow_ups_status: SectionStatus;
+  recent_documents: { id: string; filename: string; processed_at: string | null }[];
+  pending_suggestions: number;
+  suggested_actions: string[];
+}
+
+export interface Suggestion {
+  id: string;
+  kind: "email_action" | "email_follow_up";
+  title: string;
+  description: string | null;
+  priority: TaskPriority;
+  due_date: string | null;
+  reason: string;
+  confidence: number | null;
+  source_type: string;
+  source_label: string | null;
+  status: "pending" | "accepted" | "dismissed";
+  task_id: string | null;
+  created_at: string;
+}
+
 // --- AI assistant -----------------------------------------------------------
 
 /** One tool the assistant ran while answering: what it did and whether it worked. */

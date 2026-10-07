@@ -85,6 +85,16 @@ class TaskRepository:
     async def delete(self, task: Task) -> None:
         await self.session.delete(task)
 
+    async def list_open(self, workspace_id: uuid.UUID, limit: int) -> list[Task]:
+        """Tasks still to do (to do or in progress), soonest deadline first."""
+        result = await self.session.execute(
+            select(Task)
+            .where(Task.workspace_id == workspace_id, Task.status.in_(_OPEN_STATUSES))
+            .order_by(Task.due_date.asc().nulls_last(), Task.created_at.desc(), Task.id)
+            .limit(limit)
+        )
+        return list(result.scalars())
+
     async def search(
         self,
         workspace_id: uuid.UUID,

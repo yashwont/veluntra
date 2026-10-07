@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import assistant, auth, documents, health, integrations, memories, notes, search, tasks, users, workspaces
+from app.api.v1 import assistant, auth, documents, health, integrations, memories, notes, proactive, search, tasks, users, workspaces
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(health.router)
@@ -13,5 +13,6 @@ api_router.include_router(documents.router)
 api_router.include_router(memories.router)
 api_router.include_router(search.router)
 api_router.include_router(integrations.router)
+api_router.include_router(proactive.router)
 api_router.include_router(integrations.callback_router)
 api_router.include_router(assistant.router)

@@ -18,6 +18,7 @@ import httpx
 from app.core.config import get_settings
 from app.integrations.google.types import (
     REQUESTED_SCOPES,
+    AwaitingReply,
     CalendarEvent,
     DriveContent,
     DriveFile,
@@ -267,6 +268,58 @@ class HttpGoogleApi:
             snippet=summary.snippet,
             body=_extract_body(raw.get("payload") or {}),
         )
+
+    async def gmail_awaiting_reply(
+        self, access_token: str, min_days: int, max_days: int, limit: int
+    ) -> Sequence[AwaitingReply]:
+        """Threads where the user wrote last, between `min_days` and `max_days` ago."""
+        headers = {"Authorization": f"Bearer {access_token}"}
+        query = f"in:sent newer_than:{max_days}d older_than:{min_days}d"
+        now = datetime.now(UTC)
+        waiting: list[AwaitingReply] = []
+        async with self._client() as client:
+            listing = await client.get(
+                f"{GMAIL}/messages",
+                params={"q": query, "maxResults": min(limit * 3, 50)},
+                headers=headers,
+            )
+            _check(listing)
+            seen: set[str] = set()
+            for item in listing.json().get("messages", []):
+                thread_id = item.get("threadId")
+                if not thread_id or thread_id in seen:
+                    continue
+                seen.add(thread_id)
+                response = await client.get(
+                    f"{GMAIL}/threads/{thread_id}",
+                    params=[
+                        ("format", "metadata"),
+                        ("metadataHeaders", "Subject"),
+                        ("metadataHeaders", "To"),
+                    ],
+                    headers=headers,
+                )
+                _check(response)
+                messages = sorted(
+                    response.json().get("messages", []), key=lambda m: int(m.get("internalDate", 0))
+                )
+                if not messages or "SENT" not in messages[-1].get("labelIds", []):
+                    continue  # the other side answered last (or the thread is empty)
+                last = messages[-1]
+                sent_at = datetime.fromtimestamp(int(last["internalDate"]) / 1000, UTC)
+                headers_of = lambda m: (m.get("payload") or {}).get("headers") or []  # noqa: E731
+                waiting.append(
+                    AwaitingReply(
+                        thread_id=thread_id,
+                        subject=_header(headers_of(messages[0]), "Subject") or "(no subject)",
+                        to=_header(headers_of(last), "To"),
+                        sent_at=sent_at,
+                        days_waiting=(now - sent_at).days,
+                    )
+                )
+                if len(waiting) >= limit:
+                    break
+        return waiting
 
     # --- Calendar ------------------------------------------------------------------------
 

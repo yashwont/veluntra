@@ -54,6 +54,17 @@ class EmailMessage(EmailSummary):
 
 
 @dataclass(frozen=True)
+class AwaitingReply:
+    """A conversation whose last message is one the user sent, with no answer since."""
+
+    thread_id: str
+    subject: str
+    to: str
+    sent_at: datetime
+    days_waiting: int
+
+
+@dataclass(frozen=True)
 class CalendarEvent:
     id: str
     title: str
@@ -94,6 +105,9 @@ class GoogleApi(Protocol):
     # --- Data (all read-only) ---
     async def gmail_search(self, access_token: str, query: str, limit: int) -> Sequence[EmailSummary]: ...
     async def gmail_get(self, access_token: str, message_id: str) -> EmailMessage: ...
+    async def gmail_awaiting_reply(
+        self, access_token: str, min_days: int, max_days: int, limit: int
+    ) -> Sequence[AwaitingReply]: ...
     async def calendar_events(
         self, access_token: str, start: datetime, end: datetime
     ) -> Sequence[CalendarEvent]: ...

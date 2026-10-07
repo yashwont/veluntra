@@ -11,6 +11,7 @@ import { logout } from "@/services/auth";
 
 const NAV = [
   { href: "/", label: "Home", icon: "M3 11.5 12 4l9 7.5M5 10v10h5v-6h4v6h5V10" },
+  { href: "/today", label: "Today", icon: "M12 3v2M12 19v2M5 12H3M21 12h-2M6.3 6.3 4.9 4.9M19.1 19.1l-1.4-1.4M17.7 6.3l1.4-1.4M4.9 19.1l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" },
   { href: "/tasks", label: "Tasks", icon: "M9 11.5 11 13.5 15.5 9M5 4h14v16H5z" },
   { href: "/notes", label: "Notes", icon: "M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5" },
   { href: "/documents", label: "Documents", icon: "M7 3h7l4 4v14H7zM14 3v5h4M10 13h5M10 17h5" },

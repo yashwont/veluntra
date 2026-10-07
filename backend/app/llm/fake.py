@@ -39,7 +39,8 @@ HELP = (
     "- \"Search everything for proposal\"\n"
     "- \"What is on my calendar this week?\"\n"
     "- \"Search my email for invoice\"\n"
-    "- \"Search my drive for budget\""
+    "- \"Search my drive for budget\"\n"
+    "- \"Prepare me for today\""
 )
 
 
@@ -119,6 +120,11 @@ class FakeProvider:
         )
         if everywhere:
             return self._call("search_everything", {"query": everywhere.group(1).strip(" ?.!\"'")})
+        if not re.search(r"\bremind me\b|\btask\b|\bnote\b|\bremember\b", lowered) and re.search(
+            r"\bprepare me\b|\bdaily briefing\b|\bbriefing\b|\bwhat should i (?:focus|work) on\b|\bplan my day\b",
+            lowered,
+        ):
+            return self._call("get_briefing", {})
         # Looking things up in Google: but "remind me to email Ram" is still a task
         lookup = not re.search(r"\bremind me\b|\btask\b|\bnote\b|\bremember\b", lowered)
         if lookup and re.search(r"\b(calendar|schedule|meetings?|agenda)\b", lowered):
@@ -206,6 +212,25 @@ class FakeProvider:
     def _call(name: str, args: dict[str, Any]) -> ToolCall:
         return ToolCall(id=f"fake_{uuid.uuid4().hex[:12]}", name=name, input=args)
 
+    @staticmethod
+    def _briefing_text(b: dict[str, Any]) -> str:
+        parts = [f"Your day, {b['date']}:"]
+        if b["priorities"]:
+            parts.append("Top priorities:\n" + "\n".join(f"- {p['title']} ({p['why']})" for p in b["priorities"]))
+        if b["due_today"]:
+            parts.append("Due today:\n" + "\n".join(f"- {t}" for t in b["due_today"]))
+        if b["meetings"]:
+            parts.append("Meetings:\n" + "\n".join(f"- {m['start']} {m['title']}" for m in b["meetings"]))
+        elif b["meetings_unavailable"]:
+            parts.append("I can't see your calendar (Google isn't connected).")
+        if b["follow_ups"]:
+            parts.append("Follow-ups:\n" + "\n".join(f"- {f}" for f in b["follow_ups"]))
+        if b["suggested_actions"]:
+            parts.append("Suggested next steps:\n" + "\n".join(f"- {a}" for a in b["suggested_actions"]))
+        if len(parts) == 1:
+            parts.append("Nothing pressing: no overdue or due tasks and nothing scheduled.")
+        return "\n\n".join(parts)
+
     # --- tool results -> reply -----------------------------------------------------
 
     def _summarize(self, turns: Sequence[LLMTurn], results: ToolResultsTurn) -> str:
@@ -258,6 +283,8 @@ class FakeProvider:
                 else:
                     shown = "\n".join(f"- [{r['type']}] {r['title']}" for r in found)
                     lines.append(f"I found {len(found)} result(s):\n{shown}")
+            elif name == "get_briefing":
+                lines.append(self._briefing_text(payload))
             elif name == "get_calendar":
                 events = payload["events"]
                 if not events:

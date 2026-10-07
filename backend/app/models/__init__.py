@@ -5,6 +5,7 @@ from app.models.document import Document, DocumentChunk, DocumentStatus
 from app.models.integration import IntegrationAccount, IntegrationProvider, IntegrationStatus
 from app.models.memory import Memory, MemoryKind, MemorySource
 from app.models.note import Note
+from app.models.suggestion import Suggestion, SuggestionKind, SuggestionStatus
 from app.models.task import Task, TaskPriority, TaskStatus
 from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMember, WorkspaceRole
@@ -24,6 +25,9 @@ __all__ = [
     "MessageRole",
     "Note",
     "RefreshToken",
+    "Suggestion",
+    "SuggestionKind",
+    "SuggestionStatus",
     "Task",
     "TaskPriority",
     "TaskStatus",

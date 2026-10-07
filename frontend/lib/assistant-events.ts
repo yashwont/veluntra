@@ -28,6 +28,8 @@ export function describeToolEvent(event: ToolEvent): { label: string; ok: boolea
       };
     case "search_memories":
       return { ok: true, label: `Recalled memories · ${(result.memories as unknown[] | undefined)?.length ?? 0} found` };
+    case "get_briefing":
+      return { ok: true, label: "Prepared your day" };
     case "get_calendar":
       return { ok: true, label: `Checked calendar · ${(result.events as unknown[] | undefined)?.length ?? 0} events` };
     case "search_email":

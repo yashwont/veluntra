@@ -345,3 +345,68 @@ def test_a_dedicated_encryption_key_is_used_when_configured(monkeypatch) -> None
         monkeypatch.undo()
         _fernet.cache_clear()
     assert json.dumps(SCOPE_DRIVE) and SCOPE_CALENDAR  # scopes stay importable constants
+
+
+# --- Gmail: conversations awaiting a reply ------------------------------------------------------
+
+
+def _thread(messages: list[tuple[int, list[str], str, str]]) -> dict:
+    """messages: (internalDate ms, labels, subject, to)."""
+    return {"messages": [
+        {"id": f"x{i}", "labelIds": labels, "internalDate": str(ms),
+         "payload": {"headers": [{"name": "Subject", "value": subject}, {"name": "To", "value": to}]}}
+        for i, (ms, labels, subject, to) in enumerate(messages)
+    ]}
+
+
+async def test_awaiting_reply_returns_only_threads_where_the_user_wrote_last() -> None:
+    now_ms = int(datetime.now(UTC).timestamp() * 1000)
+    day = 24 * 3600 * 1000
+    threads = {
+        # I wrote last, 6 days ago -> waiting
+        "t1": _thread([(now_ms - 9 * day, ["INBOX"], "Proposal", "me@x.test"), (now_ms - 6 * day, ["SENT"], "Re: Proposal", "ram@abc.test")]),
+        # they answered after me -> not waiting
+        "t2": _thread([(now_ms - 8 * day, ["SENT"], "Quote", "sita@abc.test"), (now_ms - 5 * day, ["INBOX"], "Re: Quote", "me@x.test")]),
+        # I wrote last, 4 days ago, listed out of order -> waiting
+        "t3": _thread([(now_ms - 4 * day, ["SENT"], "Re: Meeting", "joe@abc.test"), (now_ms - 7 * day, ["INBOX"], "Meeting", "me@x.test")]),
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path.endswith("/messages"):
+            # two messages from the same thread must not be fetched twice
+            return httpx.Response(200, json={"messages": [
+                {"id": "a", "threadId": "t1"}, {"id": "b", "threadId": "t1"},
+                {"id": "c", "threadId": "t2"}, {"id": "d", "threadId": "t3"},
+            ]})
+        return httpx.Response(200, json=threads[path.rsplit("/", 1)[1]])
+
+    api, seen = api_with(handler)
+
+    waiting = await api.gmail_awaiting_reply("TOKEN", 3, 14, 10)
+
+    assert seen[0].url.params["q"] == "in:sent newer_than:14d older_than:3d"
+    assert sum(1 for r in seen if r.url.path.endswith("/t1")) == 1
+    assert seen[1].url.params["format"] == "metadata"
+    assert [(w.thread_id, w.subject, w.to) for w in waiting] == [
+        ("t1", "Proposal", "ram@abc.test"),
+        ("t3", "Meeting", "joe@abc.test"),
+    ]
+    assert [w.days_waiting for w in waiting] == [6, 4]
+    assert all(w.sent_at.tzinfo is not None for w in waiting)
+
+
+async def test_awaiting_reply_respects_the_limit_and_handles_empty_results() -> None:
+    now_ms = int(datetime.now(UTC).timestamp() * 1000)
+    one = _thread([(now_ms - 5 * 24 * 3600 * 1000, ["SENT"], "S", "a@b.test")])
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/messages"):
+            return httpx.Response(200, json={"messages": [{"id": str(i), "threadId": f"t{i}"} for i in range(5)]})
+        return httpx.Response(200, json=one)
+
+    api, _ = api_with(handler)
+    assert len(await api.gmail_awaiting_reply("T", 3, 14, 2)) == 2
+
+    empty, _ = api_with(lambda r: httpx.Response(200, json={}))
+    assert await empty.gmail_awaiting_reply("T", 3, 14, 5) == []

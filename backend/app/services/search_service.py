@@ -194,7 +194,26 @@ class SearchService:
         types: set[SearchType] | None = None,
         limit: int = 20,
     ) -> tuple[ParsedQuery, list[SearchResult]]:
-        parsed = parse_query(raw_query)
+        return await self.search_parsed(parse_query(raw_query), types=types, limit=limit)
+
+    async def search_text(
+        self, text: str, *, types: set[SearchType] | None = None, limit: int = 20
+    ) -> list[SearchResult]:
+        """Search for words only. Unlike `search`, `tag:x`-style operators in the text are
+        NOT interpreted: use this for text the user didn't type (event titles, emails)."""
+        words = " ".join(text.split())
+        if not words:
+            return []
+        _, results = await self.search_parsed(ParsedQuery(text=words), types=types, limit=limit)
+        return results
+
+    async def search_parsed(
+        self,
+        parsed: ParsedQuery,
+        *,
+        types: set[SearchType] | None = None,
+        limit: int = 20,
+    ) -> tuple[ParsedQuery, list[SearchResult]]:
         candidates = parsed.candidate_types(types)
 
         if not parsed.text and not parsed.has_filters:

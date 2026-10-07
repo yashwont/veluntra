@@ -17,6 +17,7 @@ from app.integrations.google.types import (
     SCOPE_CALENDAR,
     SCOPE_DRIVE,
     SCOPE_GMAIL,
+    AwaitingReply,
     CalendarEvent,
     DriveFile,
     EmailMessage,
@@ -244,6 +245,19 @@ class IntegrationService:
 
     async def gmail_read(self, message_id: str) -> EmailMessage:
         return await self._call(SCOPE_GMAIL, lambda t: self.google.gmail_get(t, message_id))
+
+    async def gmail_awaiting_reply(
+        self, min_days: int, max_days: int, limit: int
+    ) -> Sequence[AwaitingReply]:
+        return await self._call(
+            SCOPE_GMAIL, lambda t: self.google.gmail_awaiting_reply(t, min_days, max_days, limit)
+        )
+
+    async def own_address(self) -> str | None:
+        account = await self.accounts.get_for_provider(
+            self.workspace_id, self.user_id, IntegrationProvider.GOOGLE
+        )
+        return account.account_email if account else None
 
     async def calendar(
         self, start: datetime, end: datetime
