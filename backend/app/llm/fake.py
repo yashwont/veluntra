@@ -33,7 +33,9 @@ HELP = (
     "- \"Remind me to call Ram next Monday\"\n"
     "- \"What are my overdue tasks?\"\n"
     "- \"Create a note called Ideas saying try a weekly review\"\n"
-    "- \"Search notes for proposal\""
+    "- \"Search notes for proposal\"\n"
+    "- \"Remember that Ram prefers email over calls\"\n"
+    "- \"What do you remember about Ram?\""
 )
 
 
@@ -106,6 +108,13 @@ class FakeProvider:
     def _plan(self, text: str, today: date) -> ToolCall | None:
         lowered = text.lower().strip()
 
+        remember = re.match(r"(?:please )?remember(?: that)?[:,]?\s+(.+)$", text.strip(), re.I)
+        if remember:
+            return self._remember(remember.group(1))
+        if re.search(r"\bremember\b|\bknow about\b", lowered):
+            about = re.search(r"\b(?:about|of|regarding)\s+(.+)$", text, re.I)
+            query = about.group(1).strip(" ?.!\"'") if about else ""
+            return self._call("search_memories", {"query": query or "the user"})
         if re.search(r"\b(create|add|write|make|new)\b.*\bnote\b", lowered):
             return self._create_note(text)
         if re.search(r"\b(search|find|look)\b.*\bnotes?\b", lowered):
@@ -117,6 +126,21 @@ class FakeProvider:
         if re.search(r"\btasks?\b|\bto-?dos?\b", lowered):
             return self._search_tasks(lowered, today)
         return None
+
+    def _remember(self, statement: str) -> ToolCall:
+        lowered = statement.lower()
+        kind = "fact"
+        if re.search(r"\b(prefer|prefers|likes?|loves?|hates?|dislikes?)\b", lowered):
+            kind = "preference"
+        elif re.search(r"\b(decided|decision|we will|i will go with)\b", lowered):
+            kind = "decision"
+        elif re.search(r"\b(promised|committed|owe|will send|deadline)\b", lowered):
+            kind = "commitment"
+        args: dict[str, Any] = {"content": statement.strip(" .!")[:1000], "kind": kind}
+        subject = re.match(r"([A-Z][\w'-]+(?: [A-Z][\w'-]+)*)\b", statement.strip())
+        if subject:
+            args["subject"] = subject.group(1)
+        return self._call("remember", args)
 
     def _create_task(self, text: str, today: date) -> ToolCall:
         remind = re.search(r"\bremind me to\s+(.+)$", text, re.I)
@@ -190,6 +214,19 @@ class FakeProvider:
                         for t in found
                     )
                     lines.append(f"I found {payload['total']} matching task(s):\n{shown}")
+            elif name == "remember":
+                memory = payload["memory"]
+                if payload["already_known"]:
+                    lines.append(f"I already knew that: “{memory['content']}”.")
+                else:
+                    lines.append(f"Got it. I'll remember: “{memory['content']}”.")
+            elif name == "search_memories":
+                found = payload["memories"]
+                if not found:
+                    lines.append("I don't remember anything about that yet.")
+                else:
+                    shown = "\n".join(f"- {m['content']}" for m in found)
+                    lines.append(f"Here is what I remember:\n{shown}")
             elif name == "search_notes":
                 found = payload["notes"]
                 if not found:

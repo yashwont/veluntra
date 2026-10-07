@@ -15,11 +15,17 @@ from app.llm.types import LLMProvider, TextTurn
 from app.models.conversation import Conversation, Message, MessageRole
 from app.models.user import User
 from app.repositories.conversations import ConversationRepository
+from app.services.memory_service import MemoryService
 from app.tools import default_registry
 from app.tools.base import ToolContext
 from app.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
+
+# Memories shown to the model with each message: few and clearly relevant, so
+# personal data is only shared when it helps (spec: retrieve the minimum context)
+CONTEXT_MEMORIES = 5
+CONTEXT_MIN_SCORE = 0.3
 
 
 class ConversationNotFoundError(NotFoundError):
@@ -115,10 +121,13 @@ class AssistantService:
             workspace_id=self.workspace_id,
             user_id=self.user.id,
             timezone=tz,
+            conversation_id=conversation.id,
         )
         try:
             result = await orchestrator.run(
-                system=build_system_prompt(datetime.now(tz)),
+                system=build_system_prompt(
+                    datetime.now(tz), await self._relevant_memories(message)
+                ),
                 turns=_build_turns(recent, message),
                 ctx=ctx,
             )
@@ -151,6 +160,25 @@ class AssistantService:
             },
         )
         return conversation, reply
+
+    async def _relevant_memories(self, message: str) -> list[str]:
+        """One-line descriptions of the memories closest to the user's message.
+        Memory is a bonus: if retrieval fails the assistant still answers."""
+        try:
+            hits = await MemoryService(self.session, self.workspace_id).search(
+                message, limit=CONTEXT_MEMORIES, min_score=CONTEXT_MIN_SCORE
+            )
+        except Exception:
+            logger.exception("memory retrieval failed", extra={"workspace_id": str(self.workspace_id)})
+            await self.session.rollback()
+            return []
+        return [
+            " ".join(
+                f"[{h.memory.kind.value}] {h.memory.subject + ': ' if h.memory.subject else ''}"
+                f"{h.memory.content}".split()
+            )
+            for h in hits
+        ]
 
     async def list_conversations(
         self, limit: int, offset: int

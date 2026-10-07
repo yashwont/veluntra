@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useWorkspace } from "@/hooks/use-workspace";
-import { NOTE_WRITE_TOOLS, TASK_WRITE_TOOLS } from "@/lib/assistant-events";
+import { MEMORY_WRITE_TOOLS, NOTE_WRITE_TOOLS, TASK_WRITE_TOOLS } from "@/lib/assistant-events";
 import type { ChatMessage, ConversationDetail } from "@/lib/types";
 import {
   deleteConversation,
@@ -80,6 +80,9 @@ export function useChat() {
       }
       if (ran.some((n) => NOTE_WRITE_TOOLS.has(n))) {
         queryClient.invalidateQueries({ queryKey: ["notes", workspaceId] });
+      }
+      if (ran.some((n) => MEMORY_WRITE_TOOLS.has(n))) {
+        queryClient.invalidateQueries({ queryKey: ["memories", workspaceId] });
       }
     },
     // The server saves the user's message even when the model fails, so the list changes either way

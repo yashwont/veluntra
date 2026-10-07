@@ -18,6 +18,8 @@ class ToolContext:
     workspace_id: uuid.UUID
     user_id: uuid.UUID
     timezone: ZoneInfo
+    # The conversation the request came from: provenance for what the assistant stores
+    conversation_id: uuid.UUID | None = None
 
     def end_of_day(self, day: date) -> datetime:
         """A due *date* means the end of that day in the user's timezone."""

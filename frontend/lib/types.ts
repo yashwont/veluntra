@@ -90,6 +90,40 @@ export interface DocumentSearchHit {
   score: number;
 }
 
+// --- Memory ------------------------------------------------------------------
+
+export const MEMORY_KINDS = [
+  "person",
+  "project",
+  "preference",
+  "commitment",
+  "event",
+  "decision",
+  "fact",
+] as const;
+export type MemoryKind = (typeof MEMORY_KINDS)[number];
+export type MemorySource = "conversation" | "note" | "document" | "manual";
+
+export interface Memory {
+  id: string;
+  workspace_id: string;
+  kind: MemoryKind;
+  content: string;
+  subject: string | null;
+  source_type: MemorySource;
+  source_id: string | null;
+  source_label: string | null;
+  confidence: number | null;
+  extraction: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemorySearchHit {
+  memory: Memory;
+  score: number;
+}
+
 // --- AI assistant -----------------------------------------------------------
 
 /** One tool the assistant ran while answering: what it did and whether it worked. */
