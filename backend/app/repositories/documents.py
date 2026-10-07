@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ class ChunkHit:
     chunk_index: int
     content: str
     score: float  # cosine similarity, 1.0 = identical direction
+    document_updated_at: datetime
 
 
 class DocumentRepository:
@@ -96,6 +98,7 @@ class DocumentRepository:
             select(
                 DocumentChunk.document_id,
                 Document.filename,
+                Document.updated_at.label("document_updated_at"),
                 DocumentChunk.chunk_index,
                 DocumentChunk.content,
                 (1 - distance).label("score"),
@@ -116,6 +119,7 @@ class DocumentRepository:
                 chunk_index=row.chunk_index,
                 content=row.content,
                 score=float(row.score),
+                document_updated_at=row.document_updated_at,
             )
             for row in result.all()
         ]

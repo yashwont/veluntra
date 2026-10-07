@@ -124,6 +124,42 @@ export interface MemorySearchHit {
   score: number;
 }
 
+// --- Search ------------------------------------------------------------------
+
+export const SEARCH_TYPES = ["task", "note", "document", "memory"] as const;
+export type SearchType = (typeof SEARCH_TYPES)[number];
+
+export interface SearchResult {
+  type: SearchType;
+  id: string;
+  title: string;
+  snippet: string;
+  /** 0-1 relevance, or null when the results are a filter-only listing. */
+  score: number | null;
+  updated_at: string;
+  tags: string[] | null;
+  status: TaskStatus | null;
+  priority: TaskPriority | null;
+  due_date: string | null;
+  kind: MemoryKind | null;
+}
+
+/** What the server understood from the query (filters typed into it, content types searched). */
+export interface SearchApplied {
+  text: string;
+  types: SearchType[];
+  tags: string[];
+  status: TaskStatus | null;
+  priority: TaskPriority | null;
+  overdue: boolean | null;
+  kind: MemoryKind | null;
+}
+
+export interface SearchResponse {
+  applied: SearchApplied;
+  results: SearchResult[];
+}
+
 // --- AI assistant -----------------------------------------------------------
 
 /** One tool the assistant ran while answering: what it did and whether it worked. */

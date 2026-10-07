@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 
 from sqlalchemy import func, literal_column, select
@@ -62,3 +64,38 @@ class NoteRepository:
 
     async def delete(self, note: Note) -> None:
         await self.session.delete(note)
+
+    async def search(
+        self,
+        workspace_id: uuid.UUID,
+        *,
+        query: str | None,
+        tags: list[str],
+        limit: int,
+    ) -> list[tuple[Note, str, float | None]]:
+        """(note, preview, rank): best match first with a rank, or newest first
+        with rank None when there is no text query. Notes are loaded without content."""
+        conditions = [Note.workspace_id == workspace_id]
+        if tags:
+            conditions.append(Note.tags.contains(tags))
+        preview = func.left(Note.content, PREVIEW_LENGTH).label("preview")
+        if query:
+            ts_query = func.websearch_to_tsquery(literal_column("'english'"), query)
+            conditions.append(Note.search_vector.op("@@")(ts_query))
+            rank = func.ts_rank(Note.search_vector, ts_query)
+            result = await self.session.execute(
+                select(Note, preview, rank)
+                .options(defer(Note.content))
+                .where(*conditions)
+                .order_by(rank.desc(), Note.id)
+                .limit(limit)
+            )
+            return [(row[0], row[1], float(row[2])) for row in result.all()]
+        result = await self.session.execute(
+            select(Note, preview)
+            .options(defer(Note.content))
+            .where(*conditions)
+            .order_by(Note.updated_at.desc(), Note.id)
+            .limit(limit)
+        )
+        return [(row[0], row[1], None) for row in result.all()]

@@ -35,7 +35,8 @@ HELP = (
     "- \"Create a note called Ideas saying try a weekly review\"\n"
     "- \"Search notes for proposal\"\n"
     "- \"Remember that Ram prefers email over calls\"\n"
-    "- \"What do you remember about Ram?\""
+    "- \"What do you remember about Ram?\"\n"
+    "- \"Search everything for proposal\""
 )
 
 
@@ -108,6 +109,13 @@ class FakeProvider:
     def _plan(self, text: str, today: date) -> ToolCall | None:
         lowered = text.lower().strip()
 
+        everywhere = re.match(
+            r"(?:search|find|look for)\s+(?:everywhere|everything|all my \w+|anywhere)\s+(?:for|about)\s+(.+)$",
+            text.strip(),
+            re.I,
+        )
+        if everywhere:
+            return self._call("search_everything", {"query": everywhere.group(1).strip(" ?.!\"'")})
         remember = re.match(r"(?:please )?remember(?: that)?[:,]?\s+(.+)$", text.strip(), re.I)
         if remember:
             return self._remember(remember.group(1))
@@ -227,6 +235,13 @@ class FakeProvider:
                 else:
                     shown = "\n".join(f"- {m['content']}" for m in found)
                     lines.append(f"Here is what I remember:\n{shown}")
+            elif name == "search_everything":
+                found = payload["results"]
+                if not found:
+                    lines.append("I found nothing matching that anywhere.")
+                else:
+                    shown = "\n".join(f"- [{r['type']}] {r['title']}" for r in found)
+                    lines.append(f"I found {len(found)} result(s):\n{shown}")
             elif name == "search_notes":
                 found = payload["notes"]
                 if not found:

@@ -2,11 +2,19 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Text
+from sqlalchemy import Computed, DateTime, Enum, ForeignKey, Index, String, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.db.mixins import TimestampMixin, UUIDPrimaryKeyMixin
+
+
+# Title weighs more than description when ranking search results.
+_SEARCH_VECTOR_SQL = (
+    "setweight(to_tsvector('english', coalesce(title, '')), 'A') || "
+    "setweight(to_tsvector('english', coalesce(description, '')), 'B')"
+)
 
 
 class TaskStatus(enum.StrEnum):
@@ -60,7 +68,13 @@ class Task(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         DateTime(timezone=True), default=None
     )
 
+    # Maintained by Postgres on every insert/update; only used inside search queries
+    search_vector: Mapped[str] = mapped_column(
+        TSVECTOR, Computed(_SEARCH_VECTOR_SQL, persisted=True), deferred=True
+    )
+
     __table_args__ = (
+        Index("ix_tasks_search_vector", "search_vector", postgresql_using="gin"),
         # Every query is scoped by workspace, then usually filtered by these
         Index("ix_tasks_workspace_id_status", "workspace_id", "status"),
         Index("ix_tasks_workspace_id_due_date", "workspace_id", "due_date"),

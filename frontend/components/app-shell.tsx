@@ -15,6 +15,7 @@ const NAV = [
   { href: "/notes", label: "Notes", icon: "M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h5" },
   { href: "/documents", label: "Documents", icon: "M7 3h7l4 4v14H7zM14 3v5h4M10 13h5M10 17h5" },
   { href: "/memory", label: "Memory", icon: "M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V4a3 3 0 0 0-3 0zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1" },
+  { href: "/search", label: "Search", icon: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" },
   { href: "/assistant", label: "Assistant", icon: "M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8zM18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8z" },
 ] as const;
 
