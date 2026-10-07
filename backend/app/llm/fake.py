@@ -138,7 +138,8 @@ class FakeProvider:
             about = re.search(r"\b(?:for|about)\s+(.+)$", text, re.I)
             query = about.group(1).strip(" ?.!\"'") if about else ""
             return self._call("search_drive", {"query": query})
-        remember = re.match(r"(?:please )?remember(?: that)?[:,]?\s+(.+)$", text.strip(), re.I)
+        # First line only: more lines after it (a pasted list, say) must not stop it matching
+        remember = re.match(r"(?:please )?remember(?: that)?[:,]?\s+(.+)", text.strip(), re.I)
         if remember:
             return self._remember(remember.group(1))
         if re.search(r"\bremember\b|\bknow about\b", lowered):

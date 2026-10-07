@@ -223,6 +223,16 @@ async def test_assistant_remembers_with_conversation_provenance(make_user, clien
     assert memory["extraction"] == {"method": "assistant"}
 
 
+async def test_remembering_works_when_the_message_has_more_lines(make_user, client) -> None:
+    alice = await make_user()
+
+    reply = await chat(client, alice, "Remember that Priya likes Friday meetings\n- What is on my calendar today?")
+    memories = (await client.get(mem_url(alice.workspace_id), headers=alice.headers)).json()["items"]
+
+    assert reply["message"]["tool_events"][0]["name"] == "remember"
+    assert [m["content"] for m in memories] == ["Priya likes Friday meetings"]  # just the first line
+
+
 async def test_assistant_does_not_store_a_repeat(make_user, client) -> None:
     alice = await make_user()
     await chat(client, alice, "Remember that Ram prefers email over calls")
